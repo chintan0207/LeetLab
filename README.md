@@ -1,45 +1,55 @@
 # LeetLab
-LeetLab is a web-based coding platform inspired by LeetCode
+LeetLab is a web-based coding platform inspired by LeetCode.
 
+## Steps to Use Prisma ORM with PostgreSQL
 
-## Step for use prisma ORM with PostgresSQL
-### 1. install prisma
+### 1. Install Prisma
 ```bash
 npm i prisma
 ```
-### 2. install prisma/client
+
+### 2. Install Prisma Client
 ```bash
 npm i @prisma/client
 ```
-### 3. intialize the prisma app
+
+### 3. Initialize Prisma
 ```bash
 npx prisma init
 ```
-after running this command schema.prisma file create inside prisma folder 
+After running this command, a `schema.prisma` file will be created inside the `prisma` folder.
 
-### 4. Run the postgres locally in docker or used cloud DB_URL
+### 4. Run PostgreSQL Locally with Docker or Use a Cloud Database
 
-this command work if you install docker in pc
+This command will work if Docker is installed on your PC:
 
 ```bash
 docker run --name my-postgres -e POSTGRES_PASSWORD=mysecretpassword -e POSTGRES_USER=myuser -e POSTGRES_DB=mydatabase -p 5432:5432 -d postgres
 ```
---name my-postgres: Names the container my-postgres
--e POSTGRES_PASSWORD=mysecretpassword: Sets the PostgreSQL password
--e POSTGRES_USER=myuser: (optional) Sets a custom user (default is postgres)
--e POSTGRES_DB=mydatabase: (optional) Creates a database with the name mydatabase
--p 5432:5432: Maps the container's port 5432 to host port 5432
--d postgres: Runs the container in detached mode (running in background) using the latest postgres image
 
-DATABASE_URL = postgresql://<username>:<password>@<host>:<port>/<database>
-Based on the Docker command I gave
+Explanation:
+- `--name my-postgres`: Names the container `my-postgres`.
+- `-e POSTGRES_PASSWORD=mysecretpassword`: Sets the PostgreSQL password.
+- `-e POSTGRES_USER=myuser`: (optional) Sets a custom user (default is `postgres`).
+- `-e POSTGRES_DB=mydatabase`: (optional) Creates a database with the name `mydatabase`.
+- `-p 5432:5432`: Maps the container's port 5432 to host port 5432.
+- `-d postgres`: Runs the container in detached mode (background) using the latest Postgres image.
 
-```bash
-DATABASE_URL = postgresql://myuser:mysecretpassword@localhost:5432/mydatabase
+**DATABASE_URL format:**
 ```
-### 5. Create user model in schema.prisma file
-for example
+postgresql://<username>:<password>@<host>:<port>/<database>
+```
+
+Based on the Docker command:
+
 ```bash
+DATABASE_URL=postgresql://myuser:mysecretpassword@localhost:5432/mydatabase
+```
+
+### 5. Create User Model in `schema.prisma`
+Example:
+
+```prisma
 model User {
   id        String   @id @default(uuid())
   name      String?
@@ -56,12 +66,16 @@ enum UserRole {
   USER
 }
 ```
-### 6. run the command for generate prisma file for prisma configuration
+
+### 6. Generate Prisma Client
 ```bash
 npx prisma generate
 ```
-### 7. create src/libs folder for db.js file inside db file 
-```bash
+
+### 7. Create a `libs/db.js` File for Prisma Client Instance
+Example `src/libs/db.js`:
+
+```javascript
 import { PrismaClient } from "../generated/prisma/index.js";
 
 const globalForPrisma = globalThis;
@@ -70,16 +84,22 @@ export const prisma = globalForPrisma.prisma || new PrismaClient();
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 ```
-when we need to use simply import prisma and used like prisma.user.findUnique, prisma.user.create
 
-### 8. This command convert or migrate prisma model code to postgres sql 
+> Now, you can import `prisma` and use it like:
+> - `prisma.user.findUnique`
+> - `prisma.user.create`
+> - etc.
+
+### 8. Migrate Prisma Models to PostgreSQL
 ```bash
 npx prisma migrate dev
 ```
-if not working or any issue then run npx prisma migrate reset
+If any issue occurs, you can reset the migration with:
+```bash
+npx prisma migrate reset
+```
 
-### 9. To sync your Prisma schema with your database
+### 9. Sync Prisma Schema with Database
 ```bash
 npx prisma db push
 ```
-
