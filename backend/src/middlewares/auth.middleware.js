@@ -62,6 +62,7 @@ export const checkAdmin = async (req, res, next) => {
     }
     next();
   } catch (error) {
+    console.log('Error while checking admin', error);
     res.status(500).json({
       success: false,
       message: 'Error while checking admin'
