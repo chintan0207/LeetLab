@@ -214,9 +214,27 @@ export const deleteProblem = async (req, res) => {
 };
 
 export const getAllProblemsSolvedByUser = async (req, res) => {
-  //   try {
-  //   } catch (error) {
-  //     console.log("Error while fetching problem", error);
-  //     res.status(500).json({ error: "Error while fetching problem" });
-  //   }
+  try {
+    const problems = await db.problem.findMany({
+      where: {
+        solvedBy: {
+          some: {
+            userId: req.user.id
+          }
+        }
+      },
+      include: {
+        solvedBy: {
+          where: {
+            userId: req.user.id
+          }
+        }
+      }
+    });
+
+    return res.status(200).json({ success: true, problems, message: 'Problems fetched successfully' });
+  } catch (error) {
+    console.log('Error while fetching problem', error);
+    res.status(500).json({ error: 'Error while fetching problem' });
+  }
 };
