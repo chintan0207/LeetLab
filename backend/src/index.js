@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import authRoutes from './routes/auth.routes.js';
 import problemsRoutes from './routes/problem.routes.js';
 import excecutionRoutes from './routes/execute-code.routes.js';
@@ -15,6 +16,12 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.FRONT_URL,
+    credentials: true
+  })
+);
 
 app.get('/', (req, res) => {
   res.send('Hello guys welcome to the leetlab 🎉');
@@ -24,7 +31,6 @@ app.use('/api/v1/problems', problemsRoutes);
 app.use('/api/v1/execute-code', excecutionRoutes);
 app.use('/api/v1/submission', submissionRoutes);
 app.use('/api/v1/playlist', playlistRoutes);
-
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
