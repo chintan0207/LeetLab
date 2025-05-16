@@ -1,5 +1,4 @@
 /* eslint-disable no-unused-vars */
-import React from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -567,7 +566,18 @@ const CreateProblemForm = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data) => {
-    console.log(data);
+    try {
+      setIsLoading(true);
+      const res = await axiosInstance.post("/problems/create-problem", data);
+      toast.success(res?.data?.message || "Problem created successfully");
+      
+      navigation("/");
+    } catch (error) {
+      console.log("Error creating problem", error);
+      toast.error("Error creating problem");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadSampleData = () => {
