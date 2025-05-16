@@ -10,7 +10,7 @@ export const useProblemStore = create((set) => ({
   isProblemsLoading: false,
   isProblemLoading: false,
 
-  getAllProblem: async () => {
+  getAllProblems: async () => {
     try {
       set({ isProblemsLoading: true });
 
