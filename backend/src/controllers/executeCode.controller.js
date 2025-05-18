@@ -1,7 +1,7 @@
 import { getLanguageName, pollBatchResults, submitBatch } from '../libs/judge0.lib.js';
 import { db } from '../libs/db.js';
 
-export const excuteCode = async (req, res) => {
+export const executeCode = async (req, res) => {
   try {
     const { source_code, language_id, stdin, expected_outputs, problemId } = req.body;
 
