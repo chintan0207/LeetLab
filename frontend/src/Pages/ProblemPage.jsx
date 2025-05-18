@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { Editor } from "@monaco-editor/react";
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import Editor from "@monaco-editor/react";
 import {
   Play,
   FileText,
@@ -18,7 +18,12 @@ import {
   ThumbsUp,
   Home,
 } from "lucide-react";
+
 import { useProblemStore } from "../store/useProblemStore";
+import { useExecutionStore } from "../store/useExecutionStore";
+import { getLanguageId } from "../lib/lang";
+import SubmissionResults from "../components/SubmissionResults";
+
 const ProblemPage = () => {
   const { id } = useParams();
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
@@ -28,18 +33,19 @@ const ProblemPage = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [testCases, setTestCases] = useState([]);
 
+  const { executeCode, submission, isExecuting } = useExecutionStore();
+
+  const submissionCount = 10;
   useEffect(() => {
     getProblemById(id);
   }, [id]);
 
-  console.log("problem", problem);
-
   useEffect(() => {
     if (problem) {
-      setCode(problem?.codeSnippets?.[selectedLanguage] || "");
+      setCode(problem.codeSnippets?.[selectedLanguage] || "");
 
       setTestCases(
-        problem?.testcases?.map((tc) => ({
+        problem.testcases?.map((tc) => ({
           input: tc.input,
           output: tc.output,
         })) || []
@@ -49,7 +55,6 @@ const ProblemPage = () => {
 
   const handleLanguageChange = (e) => {
     const lang = e.target.value;
-
     setSelectedLanguage(lang);
     setCode(problem.codeSnippets?.[lang] || "");
   };
@@ -59,12 +64,12 @@ const ProblemPage = () => {
       case "description":
         return (
           <div className="prose max-w-none">
-            <p className="text-lg mb-6">{problem?.description}</p>
+            <p className="text-lg mb-6">{problem.description}</p>
 
-            {problem?.examples && (
+            {problem.examples && (
               <>
                 <h3 className="text-xl font-bold mb-4">Examples:</h3>
-                {Object.entries(problem?.examples).map(
+                {Object.entries(problem.examples).map(
                   ([lang, example], idx) => (
                     <div
                       key={lang}
@@ -102,12 +107,12 @@ const ProblemPage = () => {
               </>
             )}
 
-            {problem?.constraints && (
+            {problem.constraints && (
               <>
                 <h3 className="text-xl font-bold mb-4">Constraints:</h3>
                 <div className="bg-base-200 p-6 rounded-xl mb-6">
                   <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                    {problem?.constraints}
+                    {problem.constraints}
                   </span>
                 </div>
               </>
@@ -133,7 +138,7 @@ const ProblemPage = () => {
             {problem?.hints ? (
               <div className="bg-base-200 p-6 rounded-xl">
                 <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                  {problem?.hints}
+                  {problem.hints}
                 </span>
               </div>
             ) : (
@@ -148,7 +153,20 @@ const ProblemPage = () => {
     }
   };
 
-  const submission = false;
+  const handleRunCode = (e) => {
+    console.log("Running code", problem);
+    e.preventDefault();
+    try {
+      const language_id = getLanguageId(selectedLanguage);
+      const stdin = problem.testcases.map((tc) => tc.input);
+      const expected_outputs = problem.testcases.map((tc) => tc.expectedOutput);
+
+      executeCode(code, language_id, stdin, expected_outputs, id);
+    } catch (error) {
+      console.log("Error executing code", error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-base-300 to-base-200 max-w-7xl w-full">
       <nav className="navbar bg-base-100 shadow-lg px-4">
@@ -158,12 +176,12 @@ const ProblemPage = () => {
             <ChevronRight className="w-4 h-4" />
           </Link>
           <div className="mt-2">
-            <h1 className="text-xl font-bold">{problem?.title || ""}</h1>
+            <h1 className="text-xl font-bold">{problem.title}</h1>
             <div className="flex items-center gap-2 text-sm text-base-content/70 mt-5">
               <Clock className="w-4 h-4" />
               <span>
                 Updated{" "}
-                {new Date(problem?.createdAt).toLocaleString("en-US", {
+                {new Date(problem.createdAt).toLocaleString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -195,7 +213,7 @@ const ProblemPage = () => {
             value={selectedLanguage}
             onChange={handleLanguageChange}
           >
-            {Object.keys(problem?.codeSnippets || {}).map((lang) => (
+            {Object.keys(problem.codeSnippets || {}).map((lang) => (
               <option key={lang} value={lang}>
                 {lang.charAt(0).toUpperCase() + lang.slice(1)}
               </option>
@@ -203,6 +221,7 @@ const ProblemPage = () => {
           </select>
         </div>
       </nav>
+
       <div className="container mx-auto p-4">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="card bg-base-100 shadow-xl">
@@ -249,6 +268,7 @@ const ProblemPage = () => {
               <div className="p-6">{renderTabContent()}</div>
             </div>
           </div>
+
           <div className="card bg-base-100 shadow-xl">
             <div className="card-body p-0">
               <div className="tabs tabs-bordered">
@@ -257,6 +277,7 @@ const ProblemPage = () => {
                   Code Editor
                 </button>
               </div>
+
               <div className="h-[600px] w-full">
                 <Editor
                   height="100%"
@@ -266,7 +287,7 @@ const ProblemPage = () => {
                   onChange={(value) => setCode(value || "")}
                   options={{
                     minimap: { enabled: false },
-                    fontSize: 16,
+                    fontSize: 22,
                     lineNumbers: "on",
                     roundedSelection: false,
                     scrollBeyondLastLine: false,
@@ -275,13 +296,17 @@ const ProblemPage = () => {
                   }}
                 />
               </div>
+
               <div className="p-4 border-t border-base-300 bg-base-200">
                 <div className="flex justify-between items-center">
                   <button
-                    className={`btn btn-primary gap-2 `}
-                    onClick={() => {}}
+                    className={`btn btn-primary gap-2 ${
+                      isExecuting ? "loading" : ""
+                    } `}
+                    onClick={handleRunCode}
+                    disabled={isExecuting}
                   >
-                    <Play className="w-4 h-4" />
+                    {!isExecuting && <Play className="w-4 h-4" />}
                     Run Code
                   </button>
                   <button className="btn btn-success gap-2">
@@ -291,38 +316,37 @@ const ProblemPage = () => {
               </div>
             </div>
           </div>
-          <div className="card bg-base-100 shadow-xl">
-            <div className="card-body p-4 ">
-              {submission ? (
-                <>
-                  <h2>SubmissionsResults</h2>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="text-xl font-bold">Test Cases</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="table table-zebra w-full">
-                      <thead>
-                        <tr>
-                          <th>Input</th>
-                          <th>Expected Output</th>
+        </div>
+
+        <div className="card bg-base-100 shadow-xl mt-6">
+          <div className="card-body">
+            {submission ? (
+              <SubmissionResults submission={submission} />
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold">Test Cases</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="table table-zebra w-full">
+                    <thead>
+                      <tr>
+                        <th>Input</th>
+                        <th>Expected Output</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {testCases.map((testCase, index) => (
+                        <tr key={index}>
+                          <td className="font-mono">{testCase.input}</td>
+                          <td className="font-mono">{testCase.output}</td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {testCases.map((testCase, index) => (
-                          <tr key={index}>
-                            <td className="font-mono">{testCase.input}</td>
-                            <td className="font-mono">{testCase.output}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
-            </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
