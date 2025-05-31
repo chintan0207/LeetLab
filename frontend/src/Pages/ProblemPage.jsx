@@ -23,22 +23,40 @@ import { useProblemStore } from "../store/useProblemStore";
 import { useExecutionStore } from "../store/useExecutionStore";
 import { getLanguageId } from "../lib/lang";
 import SubmissionResults from "../components/SubmissionResults";
+import { useSubmissionStore } from "../store/useSubmissionStore";
+import SubmissionsList from "../components/SubmissionList";
 
 const ProblemPage = () => {
   const { id } = useParams();
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
+
+  const {
+    submission: submissions,
+    isLoading: isSubmissionsLoading,
+    getSubmissionForProblem,
+    getSubmissionCountForProblem,
+    submissionCount,
+  } = useSubmissionStore();
+
   const [code, setCode] = useState("");
   const [activeTab, setActiveTab] = useState("description");
-  const [selectedLanguage, setSelectedLanguage] = useState("javascript");
+  const [selectedLanguage, setSelectedLanguage] = useState("JAVASCRIPT");
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [testCases, setTestCases] = useState([]);
 
+  console.log("selectedLanguage", selectedLanguage);
   const { executeCode, submission, isExecuting } = useExecutionStore();
 
-  const submissionCount = 10;
   useEffect(() => {
     getProblemById(id);
+    getSubmissionCountForProblem(id);
   }, [id]);
+
+  useEffect(() => {
+    if (activeTab === "submissions" && id) {
+      getSubmissionForProblem(id);
+    }
+  }, [activeTab, id]);
 
   useEffect(() => {
     if (problem) {
@@ -64,12 +82,12 @@ const ProblemPage = () => {
       case "description":
         return (
           <div className="prose max-w-none">
-            <p className="text-lg mb-6">{problem.description}</p>
+            <p className="text-lg mb-6">{problem?.description}</p>
 
-            {problem.examples && (
+            {problem?.examples && (
               <>
                 <h3 className="text-xl font-bold mb-4">Examples:</h3>
-                {Object.entries(problem.examples).map(
+                {Object.entries(problem.examples)?.map(
                   ([lang, example], idx) => (
                     <div
                       key={lang}
@@ -107,12 +125,12 @@ const ProblemPage = () => {
               </>
             )}
 
-            {problem.constraints && (
+            {problem?.constraints && (
               <>
                 <h3 className="text-xl font-bold mb-4">Constraints:</h3>
                 <div className="bg-base-200 p-6 rounded-xl mb-6">
                   <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                    {problem.constraints}
+                    {problem?.constraints}
                   </span>
                 </div>
               </>
@@ -121,11 +139,11 @@ const ProblemPage = () => {
         );
       case "submissions":
         return (
-          <div className="p-4 text-center text-base-content/70">
-            No Submisssion
-          </div>
+          <SubmissionsList
+            submissions={submissions}
+            isLoading={isSubmissionsLoading}
+          />
         );
-      // return <SubmissionsList submissions={submissions} isLoading={isSubmissionsLoading} />;
       case "discussion":
         return (
           <div className="p-4 text-center text-base-content/70">
@@ -138,7 +156,7 @@ const ProblemPage = () => {
             {problem?.hints ? (
               <div className="bg-base-200 p-6 rounded-xl">
                 <span className="bg-black/90 px-4 py-1 rounded-lg font-semibold text-white text-lg">
-                  {problem.hints}
+                  {problem?.hints}
                 </span>
               </div>
             ) : (
@@ -158,8 +176,10 @@ const ProblemPage = () => {
     e.preventDefault();
     try {
       const language_id = getLanguageId(selectedLanguage);
-      const stdin = problem.testcases.map((tc) => tc.input);
-      const expected_outputs = problem.testcases.map((tc) => tc.expectedOutput);
+      const stdin = problem?.testcases.map((tc) => tc.input);
+      const expected_outputs = problem?.testcases.map(
+        (tc) => tc.expectedOutput
+      );
 
       executeCode(code, language_id, stdin, expected_outputs, id);
     } catch (error) {
@@ -176,12 +196,12 @@ const ProblemPage = () => {
             <ChevronRight className="w-4 h-4" />
           </Link>
           <div className="mt-2">
-            <h1 className="text-xl font-bold">{problem.title}</h1>
+            <h1 className="text-xl font-bold">{problem?.title}</h1>
             <div className="flex items-center gap-2 text-sm text-base-content/70 mt-5">
               <Clock className="w-4 h-4" />
               <span>
                 Updated{" "}
-                {new Date(problem.createdAt).toLocaleString("en-US", {
+                {new Date(problem?.createdAt).toLocaleString("en-US", {
                   year: "numeric",
                   month: "long",
                   day: "numeric",
@@ -189,7 +209,7 @@ const ProblemPage = () => {
               </span>
               <span className="text-base-content/30">•</span>
               <Users className="w-4 h-4" />
-              <span>{10} Submissions</span>
+              <span>{submissionCount} Submissions</span>
               <span className="text-base-content/30">•</span>
               <ThumbsUp className="w-4 h-4" />
               <span>95% Success Rate</span>
@@ -213,7 +233,7 @@ const ProblemPage = () => {
             value={selectedLanguage}
             onChange={handleLanguageChange}
           >
-            {Object.keys(problem.codeSnippets || {}).map((lang) => (
+            {Object.keys(problem?.codeSnippets || {}).map((lang) => (
               <option key={lang} value={lang}>
                 {lang.charAt(0).toUpperCase() + lang.slice(1)}
               </option>
@@ -278,7 +298,7 @@ const ProblemPage = () => {
                 </button>
               </div>
 
-              <div className="h-[600px] w-full">
+              <div className="h-[350px] w-full mb-2">
                 <Editor
                   height="100%"
                   language={selectedLanguage.toLowerCase()}
@@ -287,7 +307,7 @@ const ProblemPage = () => {
                   onChange={(value) => setCode(value || "")}
                   options={{
                     minimap: { enabled: false },
-                    fontSize: 22,
+                    fontSize: 14,
                     lineNumbers: "on",
                     roundedSelection: false,
                     scrollBeyondLastLine: false,
@@ -297,56 +317,31 @@ const ProblemPage = () => {
                 />
               </div>
 
-              <div className="p-4 border-t border-base-300 bg-base-200">
-                <div className="flex justify-between items-center">
-                  <button
-                    className={`btn btn-primary gap-2 ${
-                      isExecuting ? "loading" : ""
-                    } `}
-                    onClick={handleRunCode}
-                    disabled={isExecuting}
-                  >
-                    {!isExecuting && <Play className="w-4 h-4" />}
-                    Run Code
-                  </button>
-                  <button className="btn btn-success gap-2">
-                    Submit Solution
-                  </button>
+              <div className="flex justify-between items-center px-2 rounded-b-2xl">
+                <button
+                  className={`btn btn-primary gap-2 ${
+                    isExecuting ? "loading" : ""
+                  } `}
+                  onClick={handleRunCode}
+                  disabled={isExecuting}
+                >
+                  {!isExecuting && <Play className="w-4 h-4" />}
+                  Run Code
+                </button>
+                <button className="btn btn-success gap-2">
+                  Submit Solution
+                </button>
+              </div>
+
+              <div>
+                <div className="card-body">
+                  <SubmissionResults
+                    submission={submission}
+                    problem={problem}
+                  />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div className="card bg-base-100 shadow-xl mt-6">
-          <div className="card-body">
-            {submission ? (
-              <SubmissionResults submission={submission} />
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-bold">Test Cases</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="table table-zebra w-full">
-                    <thead>
-                      <tr>
-                        <th>Input</th>
-                        <th>Expected Output</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {testCases.map((testCase, index) => (
-                        <tr key={index}>
-                          <td className="font-mono">{testCase.input}</td>
-                          <td className="font-mono">{testCase.output}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
           </div>
         </div>
       </div>
